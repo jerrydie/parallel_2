@@ -13,23 +13,6 @@ namespace hse::parallel::lab1
 	__asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
 	return ((std::uint64_t) hi << 32) | lo;
 	}
-	/***
-	double simpsonIntegral(double a, double b, std::size_t n, const std::function<double (double)> &f) {
-	    const double width = (b-a)/n;
-
-	    double simpson_integral = 0;
-	    #pragma omp parallel
-	    #pragma omp simd
-	    for(std::size_t step = 0; step < n; step++) {
-		const double x1 = a + step*width;
-		const double x2 = a + (step+1)*width;
-
-		simpson_integral += (x2-x1)/6.0*(f(x1) + 4.0*f(0.5*(x1+x2)) + f(x2));
-	    }
-
-	    return simpson_integral;
-	}
-	***/
 	double simpsonIntegral(double a, double b, std::size_t n, const std::function<double (double)> &f) {
 	    const double width = (b-a)/n;
 	    auto g = [](double x1, double x2, const std::function<double (double)> &f_)->double{ return (x2-x1)/6.0*(f_(x1) + 4.0*f_(0.5*(x1+x2)) + f_(x2)); };

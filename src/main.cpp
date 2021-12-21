@@ -47,7 +47,7 @@ namespace hse::parallel_2
 			auto start = MPI_Wtime();
 			std::uint64_t tact_start = rdtsc();
 			MPI_Send(&start, 1, MPI_DOUBLE, LAST_THREAD, 1, MPI_COMM_WORLD);
-			MPI_Send(&tact_start, 1, MPI_UINT32_T, LAST_THREAD, 2, MPI_COMM_WORLD);
+			MPI_Send(&tact_start, 1, MPI_UINT64_T, LAST_THREAD, 2, MPI_COMM_WORLD);
 		}
 		
 		for(int i = ibeg; i < ((iend > v_size) ? v_size : iend); i++)
@@ -57,12 +57,12 @@ namespace hse::parallel_2
 		if(rank != LAST_THREAD) {
 		  	MPI_Send(&result, 1, MPI_INT, LAST_THREAD, 0, MPI_COMM_WORLD);
 		}
-		if (rank == LAST_THREAD) {
+		else {
 		  	MPI_Status status;
 		  	double start;
 			std::uint64_t tact_start;
 		  	MPI_Recv(&start, 1, MPI_DOUBLE, FIRST_THREAD, 1, MPI_COMM_WORLD, &status);
-		  	MPI_Recv(&tact_start, 1, MPI_UINT32_T, FIRST_THREAD, 2, MPI_COMM_WORLD, &status);
+		  	MPI_Recv(&tact_start, 1, MPI_UINT64_T, FIRST_THREAD, 2, MPI_COMM_WORLD, &status);
 		  	for(int sender = 0; sender < rank; sender++) {
 		  		int sender_result;
 		  		MPI_Recv(&sender_result, 1, MPI_INT, sender, 0, MPI_COMM_WORLD, &status);
@@ -77,10 +77,13 @@ namespace hse::parallel_2
 			auto tacts = tact_end - tact_start;
 			// Вывод замеров
 			std::cout << "Vector size: " << v_size;
-			std::cout << "\nTotal time: " << duration;
-			std::cout << "\nGFLOPS: " << v_size/(duration);
-			std::cout << "\nProcessor clocks: " << tacts;
-			std::cout << "Result: " << result << "\n\n";
+			// Если таймеры разных процесов синхронизированы
+			if(MPI_WTIME_IS_GLOBAL) {
+				std::cout << "\nTotal time: " << duration;
+				std::cout << "\nGFLOPS: " << v_size*(((iend > v_size) ? v_size : iend) - ibeg)/(duration);
+				std::cout << "\nProcessor clocks: " << tacts;
+			}
+			std::cout << "\nResult: " << result << "\n\n";
 		}
 	
 		return 0;		
