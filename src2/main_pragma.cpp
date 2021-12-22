@@ -19,8 +19,8 @@ namespace hse::parallel::lab1
 	    double simpson_integral_tmp[4] = {0.,0.,0.,0.};
 	    __m256d val1 = _mm256_load_pd(&simpson_integral_tmp[0]);
 	    __m256d val2;
+	    double simpson_integral = 0;
 	    double x1 = a;
-	    #pragma omp parallel
 	    for( std::size_t step = 0; step < n ; step+=4) {
 	        double x1 = a + step*width;
 	        double x2 = x1 + width;
@@ -28,10 +28,11 @@ namespace hse::parallel::lab1
 	        double x4 = x3 + width;
 	        double x5 = x4 + width;
 	        val2 = _mm256_set_pd (g(x1, x2, f),g(x2, x3, f),g(x3, x4, f),g(x4, x5, f));
-	        val1 = _mm256_add_pd (val1, val2);
+	        _mm256_store_pd (simpson_integral_tmp, val2);
+	        #pragma omp parallel for reduction(+:simpson_integral)
+	        for (auto elem: simpson_integral_tmp)
+	        	simpson_integral += elem;
 	    }
-	    _mm256_store_pd (simpson_integral_tmp, val1);
-	    double simpson_integral = simpson_integral_tmp[0] + simpson_integral_tmp[1] + simpson_integral_tmp[2] + simpson_integral_tmp[3];
 	    return simpson_integral;
 	}
 	
@@ -56,8 +57,6 @@ int main()
 	{
 		auto start = std::chrono::system_clock::now();
 		std::uint64_t tact_start = hse::parallel::lab1::rdtsc();
-		
-		
 		
 		double res = hse::parallel::lab1::simpsonIntegral(a, b, n, f);
 	
